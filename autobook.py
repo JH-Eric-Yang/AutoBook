@@ -62,8 +62,8 @@ def init_court_booking():
         driver.implicitly_wait(0.5)
 
         ##log in
-        driver.find_element(By.ID, "ctl00_MainContent_InputLogin").send_keys("jiahao.yang@warwick.ac.uk")
-        driver.find_element(By.ID, "ctl00_MainContent_InputPassword").send_keys("Ericegg251314.")
+        driver.find_element(By.ID, "ctl00_MainContent_InputLogin").send_keys("jiahao.yang@warwick.ac.u")
+        driver.find_element(By.ID, "ctl00_MainContent_InputPassword").send_keys("dsfds")
         driver.find_element(By.ID, "ctl00_MainContent_btnLogin").click()
         if (driver.current_url != "https://sportwarwick.leisurecloud.net/Connect/memberHomePage.aspx"):
             assert "Invalid User Name and Pass Word"
