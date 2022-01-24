@@ -199,7 +199,7 @@ class BookingCore:
             self._procedure_monitor()
         else:
             print("No time slots avialable for today")
-            with open('result.csv', 'a') as f:
+            with open('G:\Project\Python\Autobook\result.csv', 'a') as f:
                 writer = csv.writer(f)
                 writer.writerow([self.date, "No available court found"])
 
@@ -319,14 +319,14 @@ class BookingCore:
             else:
                 print("Booking Complete")
                 print(self.court_success_book)
-                with open('result.csv','a') as f:
+                with open('G:\Project\Python\Autobook\result.csv','a') as f:
                     writer = csv.writer(f)
                     writer.writerow([self.date, self.court_success_book])
 
         else:
             print("Booking Complete")
             print(self.court_success_book)
-            with open('result.csv', 'a') as f:
+            with open('G:\Project\Python\Autobook\result.csv', 'a') as f:
                 writer = csv.writer(f)
                 writer.writerow([self.date,self.court_success_book])
 
