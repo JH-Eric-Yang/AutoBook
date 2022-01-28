@@ -53,7 +53,7 @@ class BookingCore:
         # earlier)# time point
         self.num_success_book = 0  # the number of success book
         self.court_success_book = []  # information about the court being book already
-        self.refresh_wait_time = 10  # the refresh freqeuncy in the monitoring page
+        self.refresh_wait_time = 3  # the refresh freqeuncy in the monitoring page
         self.time_start = "23:58:00"  # the monitor process only start after this time
         self.time_end = "00:10:00"  # the booking core will end after this time
         self.length = length  # the time difference between time 1 and time 2, set it as zero if you only need 1 slot
@@ -62,6 +62,8 @@ class BookingCore:
         self.attempt_booking_court = ""
 
     def init_booking(self):  # init booking core
+        description = "Now start booking for " + self.sports + " court on " + self.date + "." + "The preferred court is " + self.pref_court
+        print(description)
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_argument("--incognito")  # incognition windows to provide clear cookies
         chrome_options.add_argument("--start-maximized");  # Maximizing the windows to ensure component is not collapsed
@@ -319,14 +321,14 @@ class BookingCore:
             else:
                 print("Booking Complete")
                 print(self.court_success_book)
-                with open('G:\Project\Python\Autobook\result.csv','a') as f:
+                with open('result.csv','a') as f:
                     writer = csv.writer(f)
                     writer.writerow([self.date, self.court_success_book])
 
         else:
             print("Booking Complete")
             print(self.court_success_book)
-            with open('G:\Project\Python\Autobook\result.csv', 'a') as f:
+            with open('result.csv', 'a') as f:
                 writer = csv.writer(f)
                 writer.writerow([self.date,self.court_success_book])
 

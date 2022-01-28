@@ -9,17 +9,18 @@ def check_schedule():
     current_time = datetime.now()
     nextweek_ct = current_time + timedelta(weeks=1) + timedelta(days=1)
 
-    with open('G:\Project\Python\Autobook\config.json', 'r', encoding='utf-8') as f:
+    with open('config.json', 'r', encoding='utf-8') as f:
         config = loads(f.read())
     user_name = config['username']
     pass_word = config['password']
-    book_schedule = pd.read_csv('G:\Project\Python\Autobook\schedule.csv')
+    book_schedule = pd.read_csv('schedule.csv')
     book_schedule_repeat = book_schedule[book_schedule["repeat"] == 1]
     book_schedule_specific = book_schedule[book_schedule["repeat"] == 0]
 
     if len(book_schedule_specific) > 0:
         for index, row in book_schedule_specific.iterrows():
-            contem_date = datetime.strptime(row["date"],"%Y-%m-%d")
+            print(row["date"])
+            contem_date = datetime.strptime(row["date"],"%m/%d/%Y")
             if contem_date.date() == nextweek_ct.date():
                 date = datetime.strftime(contem_date.date(),"%d %b")
                 time = row["time"]
