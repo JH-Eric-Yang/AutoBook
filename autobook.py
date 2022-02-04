@@ -56,10 +56,17 @@ class BookingCore:
         self.refresh_wait_time = 3  # the refresh freqeuncy in the monitoring page
         self.time_start = "23:58:00"  # the monitor process only start after this time
         self.time_end = "00:10:00"  # the booking core will end after this time
-        self.length = length  # the time difference between time 1 and time 2, set it as zero if you only need 1 slot
-        self.time2 = self.time + timedelta(hours=self.length)  # the second time point
+        self.length = length # the time difference between time 1 and time 2, set it as zero if you only need 1 slot
+        self.reverse = False # whehter the policy has been reversed
         self.onset_time = datetime.now()
         self.attempt_booking_court = ""
+        
+        if self.sports == "badminton":
+            self.timeslot_length = 1
+        elif self.sports == "squash":
+            self.timeslot_length = 0.75
+
+        self.time2 = self.time + timedelta(hours=self.timeslot_length)  # the second time point
 
     def init_booking(self):  # init booking core
         description = "Now start booking for " + self.sports + " court on " + self.date + "." + "The preferred court is " + self.pref_court
@@ -134,9 +141,9 @@ class BookingCore:
     def _procedure_court_monit(self):
         self._procedure_locate_date()  # locate the correct date
         print("Looking for court for ", self.time, self.time2)
+        self.driver.implicitly_wait(0.5)
         available_timeslot = self.driver.find_elements(By.CLASS_NAME,
                                                        "itemavailable")  # check whether the time slot has been released
-
         if len(available_timeslot) > 0:  # if time slot has ben released
             print("Timeslot available")
             if self._check_times_availablity():  # check whether the courts has been occupied for activities
@@ -148,9 +155,14 @@ class BookingCore:
 
         else:
             print("no available time slots, waitng to refresh")
-            sleep(self.refresh_wait_time)
-            self.driver.refresh()
-            self._procedure_monitor()
+            current_time = datetime.now()
+            if current_time < self.onset_time + timedelta(minutes=15):
+                sleep(self.refresh_wait_time)
+                self.driver.refresh()
+                print("refreshing")
+                self._procedure_monitor()
+            else:
+                self.driver.quit()
 
     def _check_times_availablity(self):
         """
@@ -200,12 +212,79 @@ class BookingCore:
             self.driver.refresh()
             self._procedure_monitor()
         else:
-            print("No time slots avialable for today")
-            with open('G:\Project\Python\Autobook\result.csv', 'a') as f:
-                writer = csv.writer(f)
-                writer.writerow([self.date, "No available court found"])
+            if self.reverse:
+                print("No time slots avialable for today")
+                with open('result.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([self.date, "No available court found"])
+            else:
+                self.policy = False
+                self.reverse = True
+                self.time -= timedelta(hours=1)
+                self.time2 -= timedelta(hours=1)
+                self.driver.refresh()
+                self._procedure_monitor()
+
 
     def _court_booking(self):
+        if self.sports == "badminton":
+            self._court_booking_badminton()
+        elif self.sports == "squash":
+            self._court_booking_squash()
+
+    def _court_booking_squash(self):
+        print("booking court for squash")
+        valid_time_slot = []
+        valid_court_info = []
+        # check current progress
+        if self.num_success_book == 0:
+            target_time = datetime.strftime(self.time, "%H:%M")
+        else:
+            target_time = datetime.strftime(self.time2, "%H:%M")
+
+        # find all possible options
+        for items in self.driver.find_elements(By.TAG_NAME, "input"):
+            if items.get_attribute("value") == target_time:
+                valid_time_slot.append(items)
+                court_info = list()
+                courtno_info = re.findall('(Court\s\d)', items.get_attribute("data-qa-id"))[0]
+                court_info.append(courtno_info)
+                valid_court_info.append(court_info)
+                print(court_info)
+        # locate the preferred court
+        target_index = -5
+        for index, items in enumerate(valid_court_info):
+            if items[-1] == self.pref_court:
+                target_index = index
+                print("Preferred court is ", self.pref_court, " Index is", target_index)
+                print(valid_court_info)
+                break
+
+        if target_index > -1:
+            valid_time_slot[target_index].click()
+            self.attempt_booking_court = valid_court_info[target_index]
+            print("Preferred court available")
+            self._procedure_monitor()
+        else:  # No preferred court going to backup court
+            print("Preferred court is not available")
+            backup = ["Court 1", "Court 2","Court 3","Court 4","Court 5","Court 6"]
+
+            def _select_backup_court(Court):
+                for index, items in enumerate(valid_court_info):
+                    if items[-1] == Court:
+                        target_index = index
+                        valid_time_slot[target_index].click()
+                        self.attempt_booking_court = valid_court_info[target_index]
+                        print("Go for back up court")
+                        self._procedure_monitor()
+                        break
+
+            for court in backup:
+                _select_backup_court(court)
+                print(court)
+
+
+    def _court_booking_badminton(self):
         valid_time_slot = []
         valid_court_info = []
         # check current progress
@@ -236,7 +315,7 @@ class BookingCore:
                 print(valid_court_info)
                 break
 
-        if target_index>-1:
+        if target_index > -1:
             valid_time_slot[target_index].click()
             self.attempt_booking_court = valid_court_info[target_index]
             print("Preferred court available")
@@ -279,7 +358,7 @@ class BookingCore:
     def _procedure_select_sport(self):  # Start to select sport
         current_url = self.driver.current_url
         if current_url == "https://sportwarwick.leisurecloud.net/Connect/mrmselectActivityGroup.aspx":
-            if self.sports == "badminton":
+            if self.sports == "badminton" or self.sports == "squash":
                 activity_list = self.driver.find_elements(By.TAG_NAME, "input")
                 for items in activity_list:
                     if items.get_attribute("value") == "Racquet Sports":
@@ -294,6 +373,14 @@ class BookingCore:
                         items.click()
                         self._procedure_monitor()
                         break
+            elif self.sports == "squash":
+                activity_list_2 = self.driver.find_elements(By.TAG_NAME, "input")
+                for items in activity_list_2:
+                    if items.get_attribute("value") == "Squash":
+                        items.click()
+                        self._procedure_monitor()
+                        break
+
 
     def _procedure_locate_date(self):
         while not self._check_data():
@@ -308,6 +395,7 @@ class BookingCore:
                 break
 
     def _procedure_complete_book(self):
+        self.driver.implicitly_wait(10)
         self.driver.find_element(By.ID,"ctl00_MainContent_btnBasket").click()
         self._procedure_monitor()
 
@@ -324,6 +412,7 @@ class BookingCore:
                 with open('result.csv','a') as f:
                     writer = csv.writer(f)
                     writer.writerow([self.date, self.court_success_book])
+                self.driver.quit()
 
         else:
             print("Booking Complete")
@@ -331,6 +420,7 @@ class BookingCore:
             with open('result.csv', 'a') as f:
                 writer = csv.writer(f)
                 writer.writerow([self.date,self.court_success_book])
+            self.driver.quit()
 
     def _procedure_booking_fail(self):
         self.attempt_booking_court = ""
