@@ -208,7 +208,7 @@ class BookingCore:
             self.time -= timedelta(hours=1)
             self.time2 -= timedelta(hours=1)
 
-        if self.time < datetime.strptime("22:00","%H:%M"):
+        if datetime.strptime("22:00", "%H:%M") > self.time > datetime.strptime("06:00", "%H:%M"):
             self.driver.refresh()
             self._procedure_monitor()
         else:
@@ -218,7 +218,11 @@ class BookingCore:
                     writer = csv.writer(f)
                     writer.writerow([self.date, "No available court found"])
             else:
-                self.policy = False
+                if self.policy:
+                    self.policy = False
+                else:
+                    self.policy = True
+
                 self.reverse = True
                 self.time -= timedelta(hours=1)
                 self.time2 -= timedelta(hours=1)
