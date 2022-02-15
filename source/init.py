@@ -17,17 +17,17 @@ def check_schedule():
         config = loads(f.read())
     user_name = config['username']
     pass_word = config['password']
-    book_schedule = pd.read_csv('schedule.csv')
+    book_schedule = pd.read_excel('schedule.xlsx')
     book_schedule_repeat = book_schedule[book_schedule["repeat"] == 1]
     book_schedule_specific = book_schedule[book_schedule["repeat"] == 0]
 
     if len(book_schedule_specific) > 0:
         for index, row in book_schedule_specific.iterrows():
             print(row["date"])
-            contem_date = datetime.strptime(row["date"],"%m/%d/%Y")
+            contem_date = row["date"]
             if contem_date.date() == nextweek_ct.date():
                 date = datetime.strftime(contem_date.date(),"%d %b")
-                time = row["time"]
+                time = str(row["time"])
                 pref_court = row["pref_court"]
                 sport = row["sports"]
                 policy = row["backward"]
